@@ -1,0 +1,22 @@
+{
+  "name": "leaflet_capalocal",
+  "version": "1.0.0",
+  "description": "Leaflet con bower, npm, gulp y github",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javi",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-connect": "^4.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.5.3",
+    "express": "^4.11.2",
+    "faker": "^2.1.2",
+    "moment": "^2.9.0",
+    "node-uuid": "^1.4.2"
+  }
+}

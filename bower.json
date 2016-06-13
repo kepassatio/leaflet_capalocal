@@ -1,0 +1,21 @@
+{
+  "name": "leaflet_capalocal",
+  "version": "1.0.0",
+  "authors": [
+    "Javi <kepassatio@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+	"bootstrap": "3.3.6",
+	"jquery":  "2.2.4",
+  "components-font-awesome":"4.6.3",
+  "leaflet":  "0.7.7"
+  }
+}
