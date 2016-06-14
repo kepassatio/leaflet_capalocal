@@ -1,9 +1,31 @@
+function getColor(d) {
+return  d === 1 ? '#800026' : 
+        d === 2 ? '#BD0026' : 
+        d === 3 ? '#FEB24C' : 
+        d === 4 ? '#FC4E2A' : 
+        d === 5 ? '#FD8D3C' : 
+        d === 6 ? '#E31A1C' : 
+        d === 7 ? '#FED976' : 
+                  '#FFEDA0'; 
+}
+
+function style(feature) { 
+  return { 
+      fillColor: getColor(feature.properties.COD_AFEC), 
+      weight: 2, 
+      opacity: 1, 
+      color: 'white', 
+      dashArray: '3', 
+      fillOpacity: 0.7 
+  }; 
+}
+
 function cargaGeoJson(ruta, capa){
     $.getJSON(ruta, function(data){
 
           L.geoJson(data).addTo(capa);
 
-          L.geoJson(data, {onEachFeature: popup}).addTo(capa);
+          L.geoJson(data, {onEachFeature: popup , style: style}).addTo(capa);
 
           function popup(feature, layer) { 
               /*if (feature.properties && feature.properties.ID_PARCELA) { 
