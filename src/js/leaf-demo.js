@@ -16,12 +16,9 @@ function cargaGeoJson(ruta, capa){
                                   ); 
               */
               if (feature.properties) {
-                layer.bindPopup('ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
-                                  'NOMBRE: ' + feature.properties.NOMBRE + '<br>' +
-                                  'CONF_N: ' + feature.properties.CONF_N + '<br>' +
-                                  'CONF_S: ' + feature.properties.CONF_S + '<br>' +
-                                  'CONF_E: ' + feature.properties.CONF_E + '<br>' +
-                                  'CONF_O: ' + feature.properties.CONF_O+ '<br>',
+                layer.bindPopup('ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
+                                  'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
+                                  'COD_AFEC: ' + feature.properties.COD_AFEC,
                                  {closeButton: false, offset: L.point(0, -20)});
                 layer.on('mouseover', function() { layer.openPopup(); });
                 layer.on('mouseout', function() { layer.closePopup(); });
@@ -64,9 +61,16 @@ var ciudades = L.geoJson(geodata, {
     }
 }).addTo(map);
 
+/*
 var parcela = new L.LayerGroup();
 cargaGeoJson('data/parcela.geojson', parcela);
 parcela.addTo(map);
+*/
+
+var combinado = new L.LayerGroup();
+cargaGeoJson('data/combinado.geojson', combinado);
+combinado.addTo(map);
+
 
 var baseLayers = {
 			"OpenStreetMap": openStreetMap,
