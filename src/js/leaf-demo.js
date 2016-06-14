@@ -12,10 +12,10 @@ return  d === 1 ? '#800026' :
 function style(feature) { 
   return { 
       fillColor: getColor(feature.properties.COD_AFEC), 
-      weight: 2, 
+      weight: 1, 
       opacity: 1, 
-      color: 'white', 
-      dashArray: '3', 
+      color: 'black', 
+      dashArray: '1', 
       fillOpacity: 0.7 
   }; 
 }
@@ -38,7 +38,7 @@ function cargaGeoJson(ruta, capa){
                                   ); 
               */
               if (feature.properties) {
-                layer.bindPopup('ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
+                layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
                                   'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
                                   'COD_AFEC: ' + feature.properties.COD_AFEC,
                                  {closeButton: false, offset: L.point(0, -20)});
@@ -58,11 +58,11 @@ var map = L.map( 'map', {
 
 var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: 'OpenStreetMap'
-});
+}).addTo(map);
 
 var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
 	       				minZoom: 9,
-	              maxZoom: 19,
+	              maxZoom: 20,
 	              attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.net" target="_blank">b5m</a>',
 	              id: 'map',
 	              tms: true
@@ -100,7 +100,7 @@ var baseLayers = {
 };
 
 var overlays = {
-	"Parcela" : parcela
+	"Parcela" : combinado
 };
 
 L.control.layers(baseLayers,overlays).addTo(map);
