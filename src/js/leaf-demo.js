@@ -1,11 +1,11 @@
 function getColor(d) {
-return  d === 1 ? '#800026' : 
-        d === 2 ? '#BD0026' : 
-        d === 3 ? '#FEB24C' : 
-        d === 4 ? '#FC4E2A' : 
-        d === 5 ? '#FD8D3C' : 
-        d === 6 ? '#E31A1C' : 
-        d === 7 ? '#FED976' : 
+return  d == 1 ? '#800026' : 
+        d == 2 ? '#BD0026' : 
+        d == 3 ? '#FEB24C' : 
+        d == 4 ? '#FC4E2A' : 
+        d == 5 ? '#FD8D3C' : 
+        d == 6 ? '#E31A1C' : 
+        d == 7 ? '#FED976' : 
                   '#FFEDA0'; 
 }
 
@@ -20,6 +20,28 @@ function style(feature) {
   }; 
 }
 
+
+function popup(feature, layer) { 
+    /*if (feature.properties && feature.properties.ID_PARCELA) { 
+        layer.bindPopup('ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
+                        'NOMBRE: ' + feature.properties.NOMBRE + '<br>' +
+                        'CONF_N: ' + feature.properties.CONF_N + '<br>' +
+                        'CONF_S: ' + feature.properties.CONF_S + '<br>' +
+                        'CONF_E: ' + feature.properties.CONF_E + '<br>' +
+                        'CONF_O: ' + feature.properties.CONF_O+ '<br>' 
+                        ); 
+    */
+    if (feature.properties) {
+      layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
+                        'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
+                        'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
+                        'AREA : ' + feature.properties.AREA,
+                       {closeButton: false, offset: L.point(0, -20)});
+      layer.on('mouseover', function() { layer.openPopup(); });
+      layer.on('mouseout', function() { layer.closePopup(); });
+    } 
+}
+
 function cargaGeoJson(ruta, capa){
     $.getJSON(ruta, function(data){
 
@@ -27,25 +49,6 @@ function cargaGeoJson(ruta, capa){
 
           L.geoJson(data, {onEachFeature: popup , style: style}).addTo(capa);
 
-          function popup(feature, layer) { 
-              /*if (feature.properties && feature.properties.ID_PARCELA) { 
-                  layer.bindPopup('ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
-                                  'NOMBRE: ' + feature.properties.NOMBRE + '<br>' +
-                                  'CONF_N: ' + feature.properties.CONF_N + '<br>' +
-                                  'CONF_S: ' + feature.properties.CONF_S + '<br>' +
-                                  'CONF_E: ' + feature.properties.CONF_E + '<br>' +
-                                  'CONF_O: ' + feature.properties.CONF_O+ '<br>' 
-                                  ); 
-              */
-              if (feature.properties) {
-                layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
-                                  'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
-                                  'COD_AFEC: ' + feature.properties.COD_AFEC,
-                                 {closeButton: false, offset: L.point(0, -20)});
-                layer.on('mouseover', function() { layer.openPopup(); });
-                layer.on('mouseout', function() { layer.closePopup(); });
-              } 
-          }
     });
 }
 
@@ -91,7 +94,60 @@ parcela.addTo(map);
 
 var combinado = new L.LayerGroup();
 cargaGeoJson('data/combinado.geojson', combinado);
-combinado.addTo(map);
+combinado;
+
+
+
+
+
+
+// Convert data from GML to an object in GeoJSON format.
+//
+// Options:
+// - xy: true (default) if coordinates are (lon,lat), false otherwise.
+function gml2geojson(gml, options) {
+    var opts = $.extend({}, {
+        xy: true
+    }, options);
+
+    var features = new OpenLayers.Format.GML.v3({
+        xy: opts.xy
+    }).read(gml);
+    var geojsonstr = new OpenLayers.Format.GeoJSON().write(features);
+    var geojson = JSON.parse(geojsonstr);
+    return geojson
+}
+
+// Load data from WFS in macroarea and comuni layers.
+function load_wfs() {
+    $.ajax({
+        url: "http://b5m.gipuzkoa.eus/ogc/wfs/desjabetzeak_wfs",
+        data: {
+            service: "WFS",
+            request: "GetFeature",
+            version: "1.1.0",
+            typename: "desjabetzeak",
+            srsName: "EPSG:4326"
+        },
+        success: function(data) {
+            var geojson = gml2geojson(data, {
+                xy: false
+            });
+            macroarea.addData(geojson["features"]);
+        }
+    });
+}
+
+macroarea = L.geoJson(null, {
+   onEachFeature: popup , style: style
+}).addTo(map);
+
+load_wfs();
+
+
+
+
+
 
 
 var baseLayers = {
@@ -100,7 +156,8 @@ var baseLayers = {
 };
 
 var overlays = {
-	"Parcela" : combinado
+	"Parcela" : combinado,
+  "GML" : macroarea
 };
 
 L.control.layers(baseLayers,overlays).addTo(map);

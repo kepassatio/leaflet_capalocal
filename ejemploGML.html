@@ -1,0 +1,92 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js"></script>
+        <script>
+
+var map = null;
+var macroarea = null;
+
+// Convert data from GML to an object in GeoJSON format.
+//
+// Options:
+// - xy: true (default) if coordinates are (lon,lat), false otherwise.
+function gml2geojson(gml, options) {
+    var opts = $.extend({}, {
+        xy: true
+    }, options);
+
+    var features = new OpenLayers.Format.GML.v3({
+        xy: opts.xy
+    }).read(gml);
+    var geojsonstr = new OpenLayers.Format.GeoJSON().write(features);
+    var geojson = JSON.parse(geojsonstr);
+    return geojson
+}
+
+// Load data from WFS in macroarea and comuni layers.
+function load_wfs() {
+    $.ajax({
+        url: "http://servizigis.arpa.emr.it/arcgis/services/BaseCartograficaSIMC/MapServer/WFSServer",
+        data: {
+            service: "WFS",
+            request: "GetFeature",
+            version: "1.1.0",
+            typename: "BaseCartograficaSIMC:Zone_di_allertamento",
+            srsName: "EPSG:4326",
+            bbox: map.getBounds().toBBoxString()
+        },
+        success: function(data) {
+            var geojson = gml2geojson(data, {
+                xy: false
+            });
+            macroarea.addData(geojson["features"]);
+        }
+    });
+}
+
+$(document).ready(function() {
+    $("#map").css("width", "100%").height(512);
+    map = L.map("map").setView([44.5, 11.5], 10);
+
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+
+    L.tileLayer.wms("http://servizigis.arpa.emr.it/arcgis/services/BaseCartograficaSIMC/MapServer/WMSServer", {
+            layers: "1",
+            format: "image/png",
+            transparent: true,
+            attribution: "ARPA SIMC",
+            crs: L.CRS.EPSG4326,
+            tileSize: 1024
+    }).addTo(map);
+
+
+    macroarea = L.geoJson(null, {
+        style: {
+            "color": "red",
+            "weight": 1,
+            "opacity": 0.65,
+        }
+    }).addTo(map);
+
+    load_wfs();
+});
+        </script>
+    </head>
+    <body>
+        <div id="description">
+            <p>This example show how to load some data from ARPA Emilia-Romagna WFS and WMS in a Leaflet map.</p>
+            <ol>
+                <li>jQuery gets the features from WFS, filtering by bbox</li>
+                <li>OpenLayers parses GML data to GeoJSON object</li>
+                <li>Leaflet shows the data</li>
+            </ol>
+        <div>
+        <div id="map"></div>
+    </body>
+</html>
