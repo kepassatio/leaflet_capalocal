@@ -21,16 +21,10 @@ function style(feature) {
 }
 
 
+//popup que muestra las propiedades de la capa
+//Hay que modificarlo para que saque las propiedades
+//desde la base de datos
 function popup(feature, layer) { 
-    /*if (feature.properties && feature.properties.ID_PARCELA) { 
-        layer.bindPopup('ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
-                        'NOMBRE: ' + feature.properties.NOMBRE + '<br>' +
-                        'CONF_N: ' + feature.properties.CONF_N + '<br>' +
-                        'CONF_S: ' + feature.properties.CONF_S + '<br>' +
-                        'CONF_E: ' + feature.properties.CONF_E + '<br>' +
-                        'CONF_O: ' + feature.properties.CONF_O+ '<br>' 
-                        ); 
-    */
     if (feature.properties) {
       layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
                         'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
@@ -42,6 +36,8 @@ function popup(feature, layer) {
     } 
 }
 
+//Carga un GeoJSOn desde un archivo local
+//Ya no es necesario, se deja para pruebas
 function cargaGeoJson(ruta, capa){
     $.getJSON(ruta, function(data){
 
@@ -52,16 +48,19 @@ function cargaGeoJson(ruta, capa){
     });
 }
 
+
+//Generamos el mapa por defecto centrado en Gipuzkoa 
 var map = L.map( 'map', {
-    center: [43.143031, -2.106940],
+    center: [43.153031, -2.106940],
     minZoom: 9,
     zoom: 10
-    //layers: [openStreetMap, b5m]
 });
 
 var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'OpenStreetMap'
-}).addTo(map);
+                minZoom: 9,
+                maxZoom: 20,
+                attribution: 'OpenStreetMap'
+});
 
 var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
 	       				minZoom: 9,
@@ -71,38 +70,17 @@ var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.
 	              tms: true
 	       }).addTo(map);
 
-var geojsonMarkerOptions = {
-    radius: 5,
-    fillColor: "#ff7800",
-    color: "#000",
-    weight: 1,
-    opacity: 1,
-    fillOpacity: 0.8
+var baseLayers = {
+      "OpenStreetMap": openStreetMap,
+      "b5m": b5m
 };
 
-var ciudades = L.geoJson(geodata, {
-    pointToLayer: function (feature, latlng) {
-        return L.circleMarker(latlng, geojsonMarkerOptions);
-    }
-}).addTo(map);
 
-/*
-var parcela = new L.LayerGroup();
-cargaGeoJson('data/parcela.geojson', parcela);
-parcela.addTo(map);
-*/
 
 var combinado = new L.LayerGroup();
 cargaGeoJson('data/combinado.geojson', combinado);
-combinado;
-
-
-
-
-
 
 // Convert data from GML to an object in GeoJSON format.
-//
 // Options:
 // - xy: true (default) if coordinates are (lon,lat), false otherwise.
 function gml2geojson(gml, options) {
@@ -118,8 +96,9 @@ function gml2geojson(gml, options) {
     return geojson
 }
 
-// Load data from WFS in macroarea and comuni layers.
-function load_wfs() {
+// Carga el GML del servicio WFS del b5m
+// lo convierte a GeoJson y lo carga en la capa que pasamos por parámetro
+function load_wfs(control, filtro, zoom) {
     $.ajax({
         url: "http://b5m.gipuzkoa.eus/ogc/wfs/desjabetzeak_wfs",
         data: {
@@ -127,37 +106,45 @@ function load_wfs() {
             request: "GetFeature",
             version: "1.1.0",
             typename: "desjabetzeak",
-            srsName: "EPSG:4326"
+            srsName: "EPSG:4326", 
+            //Para el proyecto 298
+            //filter: "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>"
+            //Para el proyecto 298 con ID_PARCELA = 11328
+            //filter:   "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>11328</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
+            filter: filtro
         },
         success: function(data) {
             var geojson = gml2geojson(data, {
                 xy: false
             });
-            macroarea.addData(geojson["features"]);
+            control.addData(geojson["features"]);
+            if (zoom == true) {
+              //Forzamos el zoom a los límites de la capa
+              map.fitBounds(control.getBounds());
+            }
         }
     });
 }
 
-macroarea = L.geoJson(null, {
-   onEachFeature: popup , style: style
-}).addTo(map);
 
-load_wfs();
+//Cargamos en una capa el proyecto entero
+proyecto = L.geoJson(
+              null, {onEachFeature: popup , style: style}
+           );
+var filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>"
+load_wfs(proyecto, filtro, false);
 
-
-
-
-
-
-
-var baseLayers = {
-			"OpenStreetMap": openStreetMap,
-			"b5m": b5m
-};
+//Cargamos en otra capa la parcela 11328
+parcela= L.geoJson(
+              null, {onEachFeature: popup , style: style}
+           ).addTo(map);
+filtro="<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>11328</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
+load_wfs(parcela, filtro, true);
 
 var overlays = {
-	"Parcela" : combinado,
-  "GML" : macroarea
+	"geoJSON local" : combinado,
+  "GML del proyecto" : proyecto,
+  "Parcela 11328" : parcela
 };
 
 L.control.layers(baseLayers,overlays).addTo(map);
