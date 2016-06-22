@@ -1,3 +1,5 @@
+var areas = new Object();
+
 function getColor(d) {
 return  d == 1 ? '#800026' : 
         d == 2 ? '#BD0026' : 
@@ -29,7 +31,8 @@ function popup(feature, layer) {
       layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
                         'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
                         'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
-                        'AREA : ' + feature.properties.AREA,
+                        'AREA : ' + feature.properties.AREA + ' <br>' +
+                        'AREA total : ' + areas[feature.properties.ID_PARCELA],
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
       layer.on('mouseout', function() { layer.closePopup(); });
@@ -118,6 +121,23 @@ function load_wfs(control, filtro, zoom) {
                 xy: false
             });
             control.addData(geojson["features"]);
+            for (var i in geojson["features"]){
+              var obj=geojson["features"][i];
+              
+              if (areas.hasOwnProperty(obj.properties.ID_PARCELA)){
+                areas[obj.properties.ID_PARCELA] += parseFloat(obj.properties.AREA);
+              } else {
+                areas[obj.properties.ID_PARCELA] = parseFloat(obj.properties.AREA);                  
+              }                  
+            }
+            /*
+            for (var i in areas){
+              if (areas.hasOwnProperty(i)) {
+                console.log (i + " tiene un area de " + areas[i] );
+              }
+            }
+            */
+
             if (zoom == true) {
               //Forzamos el zoom a los límites de la capa
               map.fitBounds(control.getBounds());
