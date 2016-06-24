@@ -1,3 +1,4 @@
+//aquí acumulamos las areas por código de finca
 var areas = new Object();
 
 function getColor(d) {
@@ -55,7 +56,7 @@ function cargaGeoJson(ruta, capa){
 //Generamos el mapa por defecto centrado en Gipuzkoa 
 var map = L.map( 'map', {
     center: [43.153031, -2.106940],
-    minZoom: 9,
+    minZoom: 10,
     zoom: 10
 });
 
@@ -68,14 +69,23 @@ var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.pn
 var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
 	       				minZoom: 9,
 	              maxZoom: 20,
-	              attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.net" target="_blank">b5m</a>',
+	              attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>',
 	              id: 'map',
 	              tms: true
 	       }).addTo(map);
 
+var ortofoto = L.tileLayer.wms("http://b5m.gipuzkoa.eus/ogc/wms/gipuzkoa_wms", {
+   layers: "orto2015",//layer name (see get capabilities)
+   format: 'image/png',
+   transparent: false,
+   version: '1.3.0',//wms version (see get capabilities)
+   attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>'
+})
+
 var baseLayers = {
       "OpenStreetMap": openStreetMap,
-      "b5m": b5m
+      "b5m": b5m,
+      "Ortofoto": ortofoto
 };
 
 
@@ -101,6 +111,7 @@ function gml2geojson(gml, options) {
 
 // Carga el GML del servicio WFS del b5m
 // lo convierte a GeoJson y lo carga en la capa que pasamos por parámetro
+// Si zoom es true centramos el zoom en la capa
 function load_wfs(control, filtro, zoom) {
     $.ajax({
         url: "http://b5m.gipuzkoa.eus/ogc/wfs/desjabetzeak_wfs",
@@ -130,10 +141,11 @@ function load_wfs(control, filtro, zoom) {
                 areas[obj.properties.ID_PARCELA] = parseFloat(obj.properties.AREA);                  
               }                  
             }
+
             /*
-            for (var i in areas){
-              if (areas.hasOwnProperty(i)) {
-                console.log (i + " tiene un area de " + areas[i] );
+            for (var i in geojson.features) {
+              if (typeof(i) !== "undefined") {
+                console.log(geojson.features[i].id + ': ' + geojson.features[i].properties.AREA);
               }
             }
             */

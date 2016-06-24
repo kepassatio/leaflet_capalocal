@@ -19,7 +19,13 @@
               .pipe(gulp.dest(paths.src+'/fonts'));
             gulp.src('./bower_components/components-font-awesome/css'+'/**/*.css')
               .pipe(gulp.dest(paths.src+'/css'));
-        });
+  });
+
+  gulp.task('backup', function () {
+      gulp.src('./src'+'/**/*.*')
+        .pipe(gulp.dest('/media/sf_Fuentes/Desarrollo/QGIS/leaflet_capalocal/src'));
+  });
+
 
   gulp.task('connect', function () {
     connect.server({
