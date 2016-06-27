@@ -1,6 +1,5 @@
 //aquí acumulamos las areas por código de finca
-var areas;
-var datosGeojson;
+var areas = new Object();
 
 function getColor(d) {
 return  d == 1 ? '#800026' : 
@@ -135,12 +134,12 @@ function load_wfs(control, filtro, zoom) {
             
             areas = new Object();
             for (var i in geojson["features"]){
-              var obj = geojson["features"][i];
+              var obj = geojson["features"][i].properties;
               
-              if (areas.hasOwnProperty(obj.properties.ID_PARCELA)){
-                areas[obj.properties.ID_PARCELA] += parseFloat(obj.properties.AREA);
+              if (areas.hasOwnProperty(obj.ID_PARCELA)){
+                areas[obj.ID_PARCELA] += parseFloat(obj.AREA);
               } else {
-                areas[obj.properties.ID_PARCELA] = parseFloat(obj.properties.AREA);                  
+                areas[obj.ID_PARCELA] = parseFloat(obj.AREA);                  
               }                  
             }
 
@@ -154,26 +153,40 @@ function load_wfs(control, filtro, zoom) {
 }
 
 
+var overlays;
+var filtro;
+
 //Cargamos en una capa el proyecto entero
-var proyecto = L.geoJson( 
-                          null, 
-                          {onEachFeature: popup , style: style}
-               ).addTo(map);
-var filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>"
-load_wfs(proyecto, filtro, true);
+var proyecto = L.geoJson(
+              null, {onEachFeature: popup , style: style}
+           ).addTo(map);
 
-//Cargamos en otra capa la parcela 11328
-parcela = L.geoJson(
-                      null, 
-                      {onEachFeature: popup , style: style}
-          ).addTo(map);
-filtro="<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>11328</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
-load_wfs(parcela, filtro, true);
+var finca= L.geoJson(
+        null, {onEachFeature: popup , style: style}
+     );
 
-var overlays = {
-	"geoJSON local" : combinado,
-  "GML del proyecto" : proyecto,
-  "Parcela 11328" : parcela
-};
+if (typeof(codigofinca) == "undefined" ) {
+  filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
+  load_wfs(proyecto, filtro, true);
+  
+  overlays = {
+//      "geoJSON local" : combinado,
+      "Proiektua 298" : proyecto
+  };
+} else {
+  filtro="<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto +"</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>" + codigofinca +"</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
+  load_wfs(finca, filtro, true);
+  finca.addTo(map);
 
-L.control.layers(baseLayers,overlays).addTo(map);s
+
+  filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
+  load_wfs(proyecto, filtro, false);
+
+  overlays = {
+  //    "geoJSON local" : combinado,
+      "Proiektua 298" : proyecto,
+      "Lurzatia 11328" : finca
+  };
+}
+
+L.control.layers(baseLayers,overlays).addTo(map);
