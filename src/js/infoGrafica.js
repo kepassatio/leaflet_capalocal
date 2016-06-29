@@ -1,6 +1,3 @@
-//aquí acumulamos las areas por código de finca
-var areas = new Object();
-
 function getColor(d) {
 return  d == 1 ? '#800026' : 
         d == 2 ? '#BD0026' : 
@@ -33,7 +30,10 @@ function popup(feature, layer) {
                         'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
                         'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
                         'AREA : ' + feature.properties.AREA + ' <br>' +
-                        'AREA total : ' + areas[feature.properties.ID_PARCELA],
+                        'AREA total : ' + feature.properties.AREA_TOTAL+ ' <br>' +
+                        'AREA expropiada: ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
+                        'AREA servidumbre: ' + feature.properties.AREA_SERVIDUMBRE + ' <br>' +
+                        'AREA temporal: ' + feature.properties.AREA_TEMPORAL,
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
       layer.on('mouseout', function() { layer.closePopup(); });
@@ -132,16 +132,38 @@ function load_wfs(control, filtro, zoom) {
                 xy: false
             });
             
-            areas = new Object();
+            //En areas guardamos el codigo de proyecto y 
+            //un array por cada parcela.
+            //  en el índice 0 el area total
+            var areas = {cod_proyect: codigoproyecto};
+            var valor;
             for (var i in geojson["features"]){
               var obj = geojson["features"][i].properties;
-              
-              if (areas.hasOwnProperty(obj.ID_PARCELA)){
-                areas[obj.ID_PARCELA] += parseFloat(obj.AREA);
+
+              if (areas.hasOwnProperty(obj.ID_PARCELA)) {
+                  valor = [ areas[obj.ID_PARCELA].area[0],
+                            areas[obj.ID_PARCELA].area[1],
+                            areas[obj.ID_PARCELA].area[2],
+                            areas[obj.ID_PARCELA].area[3] ];
               } else {
-                areas[obj.ID_PARCELA] = parseFloat(obj.AREA);                  
-              }                  
+                  valor = [0, 0, 0, 0];
+                  areas[obj.ID_PARCELA]={area: valor};
+              };
+              valor[0] += parseFloat(obj.AREA);
+              valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
+              areas[obj.ID_PARCELA].area = valor;
             }
+
+            //Añadimos las propiedades para que aparezcan en el popup
+            for (var i in geojson["features"]){
+              var obj = geojson["features"][i].properties;
+
+              obj.AREA_TOTAL = areas[obj.ID_PARCELA].area[0].toFixed(2);
+              obj.AREA_EXPROPIADA = areas[obj.ID_PARCELA].area[1].toFixed(2);
+              obj.AREA_SERVIDUMBRE = areas[obj.ID_PARCELA].area[2].toFixed(2);                            
+              obj.AREA_TEMPORAL = areas[obj.ID_PARCELA].area[3].toFixed(2);
+            }
+            //console.log(JSON.stringify(areas));
 
             control.addData(geojson["features"]);
             if (zoom == true) {
@@ -152,23 +174,19 @@ function load_wfs(control, filtro, zoom) {
     });
 }
 
-
 var overlays;
 var filtro;
-
 //Cargamos en una capa el proyecto entero
-var proyecto = L.geoJson(
+var proyecto =  L.geoJson(
+                    null, {onEachFeature: popup , style: style}
+                ).addTo(map);
+var finca = L.geoJson(
               null, {onEachFeature: popup , style: style}
-           ).addTo(map);
-
-var finca= L.geoJson(
-        null, {onEachFeature: popup , style: style}
-     );
+            );
 
 if (typeof(codigofinca) == "undefined" ) {
   filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
   load_wfs(proyecto, filtro, true);
-  
   overlays = {
 //      "geoJSON local" : combinado,
       "Proiektua 298" : proyecto
@@ -178,10 +196,8 @@ if (typeof(codigofinca) == "undefined" ) {
   load_wfs(finca, filtro, true);
   finca.addTo(map);
 
-
   filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
   load_wfs(proyecto, filtro, false);
-
   overlays = {
   //    "geoJSON local" : combinado,
       "Proiektua 298" : proyecto,
