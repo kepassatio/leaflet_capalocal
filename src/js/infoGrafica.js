@@ -149,6 +149,7 @@ function load_wfs(control, filtro, zoom) {
                   valor = [0, 0, 0, 0];
                   areas[obj.ID_PARCELA]={area: valor};
               };
+
               valor[0] += parseFloat(obj.AREA);
               valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
               areas[obj.ID_PARCELA].area = valor;
@@ -163,6 +164,7 @@ function load_wfs(control, filtro, zoom) {
               obj.AREA_SERVIDUMBRE = areas[obj.ID_PARCELA].area[2].toFixed(2);                            
               obj.AREA_TEMPORAL = areas[obj.ID_PARCELA].area[3].toFixed(2);
             }
+
             //console.log(JSON.stringify(areas));
 
             control.addData(geojson["features"]);
