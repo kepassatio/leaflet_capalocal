@@ -1,5 +1,3 @@
-//aquí acumulamos las areas por código de finca
-var areas = new Object();
 
 function getColor(d) {
 return  d == 1 ? '#800026' : 
@@ -33,7 +31,10 @@ function popup(feature, layer) {
                         'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
                         'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
                         'AREA : ' + feature.properties.AREA + ' <br>' +
-                        'AREA total : ' + areas[feature.properties.ID_PARCELA],
+                        'AREA total : ' + feature.properties.AREA_TOTAL+ ' <br>' +
+                        'AREA expropiada: ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
+                        'AREA servidumbre: ' + feature.properties.AREA_SERVIDUMBRE + ' <br>' +
+                        'AREA temporal: ' + feature.properties.AREA_TEMPORAL,
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
       layer.on('mouseout', function() { layer.closePopup(); });
@@ -133,15 +134,34 @@ function load_wfs(control, filtro, zoom) {
             });
             
             areas = new Object();
+
             for (var i in geojson["features"]){
               var obj = geojson["features"][i].properties;
-              
-              if (areas.hasOwnProperty(obj.ID_PARCELA)){
-                areas[obj.ID_PARCELA] += parseFloat(obj.AREA);
+              var valor;
+              if (areas.hasOwnProperty(obj.ID_PARCELA)) {
+                  valor = [ isNaN(areas[obj.ID_PARCELA].area[0]) ? 0 : parseFloat(areas[obj.ID_PARCELA].area[0]),
+                            isNaN(areas[obj.ID_PARCELA].area[1]) ? 0 : parseFloat(areas[obj.ID_PARCELA].area[1]),
+                            isNaN(areas[obj.ID_PARCELA].area[2]) ? 0 : parseFloat(areas[obj.ID_PARCELA].area[2]),
+                            isNaN(areas[obj.ID_PARCELA].area[3]) ? 0 : parseFloat(areas[obj.ID_PARCELA].area[3])]
               } else {
-                areas[obj.ID_PARCELA] = parseFloat(obj.AREA);                  
-              }                  
+                  valor = [0, 0, 0, 0];
+                  areas[obj.ID_PARCELA]={area: valor};
+              };
+
+              valor[0] += parseFloat(obj.AREA);
+              valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
+              areas[obj.ID_PARCELA].area = valor;
             }
+
+            for (var i in geojson["features"]){
+              var obj = geojson["features"][i].properties;
+
+              obj.AREA_TOTAL = areas[obj.ID_PARCELA].area[0].toFixed(2);
+              obj.AREA_EXPROPIADA = areas[obj.ID_PARCELA].area[1].toFixed(2);
+              obj.AREA_SERVIDUMBRE = areas[obj.ID_PARCELA].area[2].toFixed(2);                            
+              obj.AREA_TEMPORAL = areas[obj.ID_PARCELA].area[3].toFixed(2);
+            }
+            console.log(JSON.stringify(areas));
 
             control.addData(geojson["features"]);
             if (zoom == true) {
