@@ -28,11 +28,8 @@ function popup(feature, layer) {
       layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
                         'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
                         'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
-                        'AREA : ' + feature.properties.AREA + ' <br>' +
-                        'AREA total : ' + feature.properties.AREA_TOTAL+ ' <br>' +
-                        'AREA expropiada: ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
-                        'AREA servidumbre: ' + feature.properties.AREA_SERVIDUMBRE + ' <br>' +
-                        'AREA temporal: ' + feature.properties.AREA_TEMPORAL,
+                        'AREA: ' + feature.properties.AREA + ' <br>' +
+                        'AREA TOTAL: ' + ((typeof feature.properties.AREA_TOTAL != 'undefined') ? feature.properties.AREA_TOTAL.toFixed(2):0),
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
       //layer.on('mouseout', function() { layer.closePopup(); });
@@ -59,6 +56,7 @@ var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.pn
                 maxZoom: 20,
                 attribution: 'OpenStreetMap'
 });
+
 var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
 	       				minZoom: 9,
 	              maxZoom: 20,
@@ -66,6 +64,7 @@ var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.
 	              id: 'map',
 	              tms: true
 }).addTo(map);
+
 var ortofoto = L.tileLayer.wms("http://b5m.gipuzkoa.eus/ogc/wms/gipuzkoa_wms", {
    layers: "orto2015",//layer name (see get capabilities)
    format: 'image/png',
@@ -80,8 +79,8 @@ var baseLayers = {
       "Ortofoto": ortofoto
 };
 
-//var combinado = new L.LayerGroup();
-//cargaGeoJson('data/combinado.geojson', combinado);
+var combinado = new L.LayerGroup();
+cargaGeoJson('data/combinado.geojson', combinado);
 
 // Convert data from GML to an object in GeoJSON format.
 // Options:
@@ -122,56 +121,34 @@ function load_wfs(control, filtro, zoom) {
                 xy: false
             });
             
-            //En areas guardamos el codigo de proyecto y 
-            //un array por cada parcela.
-            //  en el índice 0 el area total
-            var areas = {cod_proyect: codigoproyecto};
-            var valor;
+            //calculamos las areas totales por parcela
+            var areas = new Object();
             for (var i in geojson["features"]){
               var obj = geojson["features"][i].properties;
 
-              if (areas.hasOwnProperty(obj.ID_PARCELA)) {
-                  valor = [ areas[obj.ID_PARCELA].areas[0],
-                            areas[obj.ID_PARCELA].areas[1],
-                            areas[obj.ID_PARCELA].areas[2],
-                            areas[obj.ID_PARCELA].areas[3] ];
+              //En areas acumulamos el area por parcela
+              if (areas.hasOwnProperty(obj.ID_PARCELA)){
+                areas[obj.ID_PARCELA] += parseFloat(obj.AREA);
               } else {
-                  valor = [0, 0, 0, 0];
-                  areas[obj.ID_PARCELA]={areas: valor};
-              };
-
-              valor[0] += parseFloat(obj.AREA);
-              valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
-              areas[obj.ID_PARCELA].areas = valor;
+                areas[obj.ID_PARCELA] = parseFloat(obj.AREA);
+              }
             }
 
-            //Añadimos las propiedades para que aparezcan en el popup
             for (var i in geojson["features"]){
               var obj = geojson["features"][i].properties;
-
-              obj.AREA_TOTAL = areas[obj.ID_PARCELA].areas[0].toFixed(2);
-              obj.AREA_EXPROPIADA = areas[obj.ID_PARCELA].areas[1].toFixed(2);
-              obj.AREA_SERVIDUMBRE = areas[obj.ID_PARCELA].areas[2].toFixed(2);                            
-              obj.AREA_TEMPORAL = areas[obj.ID_PARCELA].areas[3].toFixed(2);
+              
+              obj.AREA_TOTAL = areas[obj.ID_PARCELA]
             }
 
-            //Llamada al servidor para que coteje las areas
-            $.ajax({
-                  type: "POST",
-                  url : "/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
-                  dataType : "json",
-                  data : {
-                      areas : JSON.stringify(areas)
-                  },
-                  success : function(data) {
-                    return true;
-                  }
-            });
-
-            //console.log(JSON.stringify(areas));
+            //llevamos al desa2 los datos de areas
+            var xhr = new XMLHttpRequest;
+            xhr.open("POST", "http://localhost:8001", true);
+            xhr.setRequestHeader("Content-Type", ",application/xml");
+            xhr.send(JSON.stringify(areas));
 
             control.addData(geojson["features"]);
             control.addTo(map);
+
             if (zoom == true) {
               //Forzamos el zoom a los límites de la capa
               map.fitBounds(control.getBounds());
@@ -182,15 +159,18 @@ function load_wfs(control, filtro, zoom) {
 
 var overlays;
 var filtro;
+
 //Cargamos en una capa el proyecto entero
-var proyecto =  L.geoJson(
-                    null, {onEachFeature: popup , style: style}
-                ).addTo(map);
+var proyecto = L.geoJson(
+          null, {onEachFeature: popup, style: style}
+    );
+
 var finca;
 
 if (typeof(codigofinca) == "undefined" ) {
   filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
   load_wfs(proyecto, filtro, true);
+
   overlays = {
 //      "geoJSON local" : combinado,
       "Proiektua 298" : proyecto
@@ -201,10 +181,10 @@ if (typeof(codigofinca) == "undefined" ) {
   );
   filtro="<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto +"</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>" + codigofinca +"</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
   load_wfs(finca, filtro, true);
-  finca.addTo(map);
 
   filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
   load_wfs(proyecto, filtro, false);
+
   overlays = {
   //    "geoJSON local" : combinado,
       "Proiektua 298" : proyecto,
