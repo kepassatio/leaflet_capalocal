@@ -4,13 +4,15 @@ var server = require('express')(),
     http =require('http');
 
 var port = 8001;
+var url = '/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas';
 server.use(cors());
 server.use(body_parser.urlencoded({extended:true}));
 
-server.post('/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas', function (req, res) {
-  res.send('POST request to homepage');
-  console.log(req.body);
+server.post(url, function (req, res) {
+	res.send(JSON.stringify({respuesta : 'recibido'}));
+	console.log(req.body);
+	res.end();
 });
 
 server.listen(port);
-console.log('Servidor POST funcionando en http://localhost:%d', port);
+console.log('Servidor POST funcionando en http://localhost:%d' + url, port);

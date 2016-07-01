@@ -26,6 +26,11 @@
         .pipe(gulp.dest('/media/sf_Fuentes/Desarrollo/QGIS/leaflet_capalocal/src'));
   });
 
+  var cors = function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    next();
+  };
 
   gulp.task('connect', function () {
     connect.server({

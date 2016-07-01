@@ -158,17 +158,16 @@ function load_wfs(control, filtro, zoom) {
             //Llamada al servidor para que coteje las areas
             $.ajax({
                   type: "POST",
-                  url : "/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
+                  url : "http://localhost:8001/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
                   dataType : "json",
-                  data : {
-                      areas : JSON.stringify(areas)
+                  data : { "areas" : JSON.stringify(areas) },
+                  success: function(data) { 
+                    //console.log(data.respuesta); 
                   },
-                  success : function(data) {
-                    return true;
+                  error: function(jqXHR, textStatus) {
+                    console.log("Fallo en la llamada POST: " + textStatus );
                   }
-            });
-
-            //console.log(JSON.stringify(areas));
+                });
 
             control.addData(geojson["features"]);
             control.addTo(map);
