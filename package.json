@@ -10,7 +10,8 @@
   "license": "MIT",
   "devDependencies": {
     "gulp": "^3.9.1",
-    "gulp-connect": "^4.0.0"
+    "gulp-connect": "^4.0.0",
+    "gulp-shell": "^0.5.2"
   },
   "dependencies": {
     "cors": "^2.5.3",

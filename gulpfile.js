@@ -1,12 +1,15 @@
 (function () {
   'use strict';
 
-  var gulp = require('gulp'),
-    connect = require('gulp-connect');
+  var PUERTO = 8000;
 
   var paths = {
     src: './src/'
   };
+
+  var gulp = require('gulp'),
+    connect = require('gulp-connect'),
+    shell = require('gulp-shell');
 
   gulp.task('copy', function () {
             gulp.src('./bower_components/bootstrap/dist/css'+'/**/*.css')
@@ -28,7 +31,7 @@
 
   gulp.task('connect', function () {
     connect.server({
-      port: 8000,
+      port: PUERTO,
       root: paths.src,
       livereload: true
     });
@@ -39,9 +42,17 @@
         .pipe(connect.reload());
   });
 
+  gulp.task('arranca_server', shell.task([
+    'node src/server.js &'
+  ]));
+
+  gulp.task('arranca_navegador', shell.task([
+    'iceweasel localhost:' + PUERTO
+  ]));
+  
   gulp.task('watch', function () {
     gulp.watch(paths.src + '**/*', ['reload']);
   });
   
-  gulp.task('default', ['connect', 'watch']);
+  gulp.task('default', ['arranca_server', 'connect', 'watch', 'arranca_navegador']);
 }());
