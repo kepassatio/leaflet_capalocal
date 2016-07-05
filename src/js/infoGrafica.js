@@ -54,30 +54,30 @@ var map = L.map( 'map', {
     zoom: 10
 });
 
-var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
                 minZoom: 9,
                 maxZoom: 20,
-                attribution: 'OpenStreetMap'
-});
-var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
-	       				minZoom: 9,
-	              maxZoom: 20,
-	              attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>',
-	              id: 'map',
-	              tms: true
+                attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>',
+                id: 'map',
+                tms: true
 }).addTo(map);
 var ortofoto = L.tileLayer.wms("http://b5m.gipuzkoa.eus/ogc/wms/gipuzkoa_wms", {
-   layers: "orto2015",//layer name (see get capabilities)
-   format: 'image/png',
-   transparent: false,
-   version: '1.3.0',//wms version (see get capabilities)
-   attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>'
-})
+     layers: "orto2015",//layer name (see get capabilities)
+     format: 'image/png',
+     transparent: false,
+     version: '1.3.0',//wms version (see get capabilities)
+     attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>'
+});
+var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    minZoom: 9,
+    maxZoom: 20,
+    attribution: 'OpenStreetMap'
+});
 
 var baseLayers = {
-      "OpenStreetMap": openStreetMap,
-      "b5m": b5m,
-      "Ortofoto": ortofoto
+    "b5m": b5m,
+    "Ortofoto": ortofoto,
+    "OpenStreetMap": openStreetMap
 };
 
 //var combinado = new L.LayerGroup();
@@ -121,60 +121,65 @@ function load_wfs(control, filtro, zoom) {
             var geojson = gml2geojson(data, {
                 xy: false
             });
-            
-            //En areas guardamos el codigo de proyecto y 
-            //un array por cada parcela.
-            //  en el índice 0 el area total
-            var areas = {cod_proyect: codigoproyecto};
-            var valor;
-            for (var i in geojson["features"]){
-              var obj = geojson["features"][i].properties;
 
-              if (areas.hasOwnProperty(obj.ID_PARCELA)) {
-                  valor = [ areas[obj.ID_PARCELA].areas[0],
-                            areas[obj.ID_PARCELA].areas[1],
-                            areas[obj.ID_PARCELA].areas[2],
-                            areas[obj.ID_PARCELA].areas[3] ];
-              } else {
-                  valor = [0, 0, 0, 0];
-                  areas[obj.ID_PARCELA]={areas: valor};
-              };
+            if (geojson["features"].length > 0) {
+              //En areas guardamos el codigo de proyecto y 
+              //un array por cada parcela.
+              //  en el índice 0 el area total
+              var areasObj = {cod_proyect: codigoproyecto, areas:{}};
+              var valor;
+              for (var i in geojson["features"]){
+                var obj = geojson["features"][i].properties;
 
-              valor[0] += parseFloat(obj.AREA);
-              valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
-              areas[obj.ID_PARCELA].areas = valor;
-            }
+                if (areasObj.areas.hasOwnProperty(obj.ID_PARCELA)) {
+                    valor = [ areasObj.areas[obj.ID_PARCELA][0],
+                              areasObj.areas[obj.ID_PARCELA][1],
+                              areasObj.areas[obj.ID_PARCELA][2],
+                              areasObj.areas[obj.ID_PARCELA][3] ];
+                } else {
+                    valor = [0, 0, 0, 0];
+                    areasObj.areas[obj.ID_PARCELA] = valor;
+                };
 
-            //Añadimos las propiedades para que aparezcan en el popup
-            for (var i in geojson["features"]){
-              var obj = geojson["features"][i].properties;
+                valor[0] += parseFloat(obj.AREA);
+                valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
+                areasObj.areas[obj.ID_PARCELA] = valor;
+              }
 
-              obj.AREA_TOTAL = areas[obj.ID_PARCELA].areas[0].toFixed(2);
-              obj.AREA_EXPROPIADA = areas[obj.ID_PARCELA].areas[1].toFixed(2);
-              obj.AREA_SERVIDUMBRE = areas[obj.ID_PARCELA].areas[2].toFixed(2);                            
-              obj.AREA_TEMPORAL = areas[obj.ID_PARCELA].areas[3].toFixed(2);
-            }
+              //Añadimos las propiedades para que aparezcan en el popup
+              for (var i in geojson["features"]){
+                var obj = geojson["features"][i].properties;
 
-            //Llamada al servidor para que coteje las areas
-            $.ajax({
-                  type: "POST",
-                  url : "http://localhost:8001/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
-                  dataType : "json",
-                  data : { "areas" : JSON.stringify(areas) },
-                  success: function(data) { 
-                    //console.log(data.respuesta); 
-                  },
-                  error: function(jqXHR, textStatus) {
-                    console.log("Fallo en la llamada POST: " + textStatus );
-                  }
-                });
+                obj.AREA_TOTAL = areasObj.areas[obj.ID_PARCELA][0].toFixed(2);
+                obj.AREA_EXPROPIADA = areasObj.areas[obj.ID_PARCELA][1].toFixed(2);
+                obj.AREA_SERVIDUMBRE = areasObj.areas[obj.ID_PARCELA][2].toFixed(2);                            
+                obj.AREA_TEMPORAL = areasObj.areas[obj.ID_PARCELA][3].toFixed(2);
+              }
 
-            control.addData(geojson["features"]);
-            control.addTo(map);
-            if (zoom == true) {
-              //Forzamos el zoom a los límites de la capa
-              map.fitBounds(control.getBounds());
-            }
+              //Llamada al servidor para que coteje las areas
+              $.ajax({
+                    type: "POST",
+                    url : "http://localhost:8001/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
+                    dataType : "json",
+                    data : { 'areasobj' : JSON.stringify(areasObj) },
+                    success: function(data) { 
+                      //console.log(data.respuesta); 
+                      console.log(JSON.stringify({'respuesta':'recibido'})); 
+                    },
+                    error: function(jqXHR, textStatus) {
+                      console.log("Fallo en la llamada POST: " + textStatus );
+                    }
+                  });
+
+              control.addData(geojson["features"]);
+              control.addTo(map);
+              if (zoom == true) {
+                //Forzamos el zoom a los límites de la capa
+                map.fitBounds(control.getBounds());
+              }
+            } else {
+              console.log("No se encuentra la información gráfica");
+           }
         }
     });
 }
