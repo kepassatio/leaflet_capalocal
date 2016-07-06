@@ -3,7 +3,7 @@ var server = require('express')(),
     cors = require('cors'),
     http =require('http');
 
-var port = 8001;
+var port = 9080;
 var url = '/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas';
 server.use(cors());
 server.use(body_parser.urlencoded({extended:true}));

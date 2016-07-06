@@ -159,7 +159,7 @@ function load_wfs(control, filtro, zoom) {
               //Llamada al servidor para que coteje las areas
               $.ajax({
                     type: "POST",
-                    url : "http://localhost:8001/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
+                    url : "http://localhost:9080/WAS/CORP/DJBExpropiacionesWEB/api/infgrafica/areas",
                     dataType : "json",
                     data : { 'areasobj' : JSON.stringify(areasObj) },
                     success: function(data) { 

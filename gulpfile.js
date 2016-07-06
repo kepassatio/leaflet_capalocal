@@ -47,7 +47,7 @@
   ]));
 
   gulp.task('arranca_navegador', shell.task([
-    'iceweasel localhost:' + PUERTO
+    'firefox localhost:' + PUERTO
   ]));
   
   gulp.task('watch', function () {
