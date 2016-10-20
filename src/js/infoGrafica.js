@@ -1,8 +1,8 @@
 function getColor(d) {
-	return  d == 1 ? '#800026' : 
+	return  d == 1 ? '#FF0000' : 
 			d == 2 ? '#BD0026' : 
 			d == 3 ? '#FEB24C' : 
-			d == 4 ? '#FC4E2A' : 
+			d == 4 ? '#FFFF00' : 
 			d == 5 ? '#FD8D3C' : 
 			d == 6 ? '#E31A1C' : 
 			d == 7 ? '#FED976' : 
@@ -16,7 +16,7 @@ function style(feature) {
 		opacity: 1, 
 		color: 'black', 
 		dashArray: '1', 
-		fillOpacity: 0.7 
+		fillOpacity: 0.3
 	}; 
 }
 
@@ -31,7 +31,8 @@ function popup(feature, layer) {
                         'AREA : ' + feature.properties.AREA + ' <br>' +
                         'AREA total : ' + feature.properties.AREA_TOTAL+ ' <br>' +
                         'AREA expropiada: ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
-                        'AREA servidumbre: ' + feature.properties.AREA_SERVIDUMBRE + ' <br>' +
+                        'AREA servidumbre aerea: ' + feature.properties.AREA_SERVIDUMBRE_AEREA + ' <br>' +
+                        'AREA servidumbre subterranea: ' + feature.properties.AREA_SERVIDUMBRE_SUBTERRANEA + ' <br>' +
                         'AREA temporal: ' + feature.properties.AREA_TEMPORAL,
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
@@ -137,9 +138,10 @@ function load_wfs(control, filtro, zoom) {
                     valor = [ areasObj.areas[obj.ID_PARCELA][0],
                               areasObj.areas[obj.ID_PARCELA][1],
                               areasObj.areas[obj.ID_PARCELA][2],
-                              areasObj.areas[obj.ID_PARCELA][3] ];
+                              areasObj.areas[obj.ID_PARCELA][3],
+                              areasObj.areas[obj.ID_PARCELA][4] ];
                 } else {
-                    valor = [0, 0, 0, 0];
+                    valor = [0, 0, 0, 0, 0];
                     areasObj.areas[obj.ID_PARCELA] = valor;
                 };
 
@@ -154,8 +156,9 @@ function load_wfs(control, filtro, zoom) {
 
                 obj.AREA_TOTAL = areasObj.areas[obj.ID_PARCELA][0].toFixed(2);
                 obj.AREA_EXPROPIADA = areasObj.areas[obj.ID_PARCELA][1].toFixed(2);
-                obj.AREA_SERVIDUMBRE = areasObj.areas[obj.ID_PARCELA][2].toFixed(2);                            
-                obj.AREA_TEMPORAL = areasObj.areas[obj.ID_PARCELA][3].toFixed(2);
+                obj.AREA_SERVIDUMBRE_AEREA = areasObj.areas[obj.ID_PARCELA][2].toFixed(2);
+                obj.AREA_SERVIDUMBRE_SUBTERRANEA = areasObj.areas[obj.ID_PARCELA][3].toFixed(2);
+                obj.AREA_TEMPORAL = areasObj.areas[obj.ID_PARCELA][4].toFixed(2);
               }
 
               //Llamada al servidor para que coteje las areas
@@ -174,7 +177,6 @@ function load_wfs(control, filtro, zoom) {
                   });
 
               control.addData(geojson["features"]);
-              control.addTo(map);
               if (zoom == true) {
                 //Forzamos el zoom a los límites de la capa
                 map.fitBounds(control.getBounds());
@@ -191,15 +193,16 @@ var filtro;
 //Cargamos en una capa el proyecto entero
 var proyecto =  L.geoJson(
                     null, {onEachFeature: popup , style: style}
-                ).addTo(map);
+                );
 var finca;
 
 if (typeof(codigofinca) == "undefined" ) {
 	filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
 	load_wfs(proyecto, filtro, true);
+	proyecto.addTo(map);
 	overlays = {
 	//      "geoJSON local" : combinado,
-	  "Proiektua 298" : proyecto
+	  "Proiektua" : proyecto
 	};
 } else {
 	finca = L.geoJson(
@@ -213,9 +216,34 @@ if (typeof(codigofinca) == "undefined" ) {
 	load_wfs(proyecto, filtro, false);
 	overlays = {
 	//    "geoJSON local" : combinado,
-	  "Proiektua 298" : proyecto,
-	  "Lurzatia 11328" : finca
+	  "Proiektua" : proyecto,
+	  "Lurzatia" : finca
   };
 }
 
-L.control.layers(baseLayers,overlays).addTo(map);vi 
+L.control.layers(baseLayers,overlays).addTo(map);
+
+// Introducimos el control de escala
+L.control.scale({
+  imperial: false,
+  metric: true
+}
+).addTo(map);
+
+// Insertamos una leyenda en el mapa
+var legenda = L.control({position: 'bottomright'});
+legenda.onAdd = function (map) {
+	var div = L.DomUtil.create('div', 'info leyenda');
+	var textos= textosLeyenda;
+	
+	if (typeof(textos) == "undefined") {
+		var textos = [ 'EXpropiado', 'Serv. a\u00E9rea', 'Serv. subterranea', 'Ocupaci\u00F3n temporal'];
+	}
+	for (var i = 0; i < textosLeyenda.length; i++) {
+		div.innerHTML +=
+		  '<i style="background:' + getColor(i+1) + '"></i> ' +
+		  textos[i] + '<p>';
+	}
+	return div;
+};
+legenda.addTo(map);
