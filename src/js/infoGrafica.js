@@ -1,9 +1,9 @@
 function getColor(d) {
-	return  d == 1 ? '#FF0000' : 
-			d == 2 ? '#BD0026' : 
+	return  d == 1 ? '#F80035' : 
+			d == 2 ? '#05FC47' : 
 			d == 3 ? '#FEB24C' : 
-			d == 4 ? '#FFFF00' : 
-			d == 5 ? '#FD8D3C' : 
+			d == 4 ? '#04E5F9' : 
+			d == 5 ? '#FF0000' : 
 			d == 6 ? '#E31A1C' : 
 			d == 7 ? '#FED976' : 
 					 '#FFEDA0'; 
@@ -24,16 +24,30 @@ function style(feature) {
 //Hay que modificarlo para que saque las propiedades
 //desde la base de datos
 function popup(feature, layer) { 
+
+	if (typeof(textosInfo) == "undefined") {
+		textosInfo = [	"ID_PROYECT",
+						"ID_PARCELA",
+						"COD_AFEC",
+						"AREA  ",
+						"AREA total",
+						"AREA expropiada",
+						"AREA servidumbre aerea",
+						"AREA servidumbre subterranea",
+						"AREA ocupacion temporal"  ];
+	}
+	
+	
     if (feature.properties) {
-      layer.bindPopup(  'ID_PROYECT: ' + feature.properties.ID_PROYECT + ' <br>' +
-                        'ID_PARCELA: ' + feature.properties.ID_PARCELA + ' <br>' +
-                        'COD_AFEC: ' + feature.properties.COD_AFEC + ' <br>' +
-                        'AREA : ' + feature.properties.AREA + ' <br>' +
-                        'AREA total : ' + feature.properties.AREA_TOTAL+ ' <br>' +
-                        'AREA expropiada: ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
-                        'AREA servidumbre aerea: ' + feature.properties.AREA_SERVIDUMBRE_AEREA + ' <br>' +
-                        'AREA servidumbre subterranea: ' + feature.properties.AREA_SERVIDUMBRE_SUBTERRANEA + ' <br>' +
-                        'AREA temporal: ' + feature.properties.AREA_TEMPORAL,
+      layer.bindPopup(  textosInfo[0] + ': ' + feature.properties.ID_PROYECT + ' <br>' +
+                        textosInfo[1] + ': ' + feature.properties.ID_PARCELA + ' <br>' +
+                        textosInfo[2] + ': ' + feature.properties.COD_AFEC + ' <br>' +
+                        textosInfo[3] + ': ' + feature.properties.AREA + ' <br>' +
+                        textosInfo[4] + ': ' + feature.properties.AREA_TOTAL+ ' <br>' +
+                        textosInfo[5] + ': ' + feature.properties.AREA_EXPROPIADA + ' <br>' +
+                        textosInfo[6] + ': ' + feature.properties.AREA_SERVIDUMBRE_AEREA + ' <br>' +
+                        textosInfo[7] + ': ' + feature.properties.AREA_SERVIDUMBRE_SUBTERRANEA + ' <br>' +
+                        textosInfo[8] + ': ' + feature.properties.AREA_TEMPORAL,
                        {closeButton: false, offset: L.point(0, -20)});
       layer.on('mouseover', function() { layer.openPopup(); });
       //layer.on('mouseout', function() { layer.closePopup(); });
@@ -51,13 +65,13 @@ function cargaGeoJson(ruta, capa){
 //Generamos el mapa por defecto centrado en Gipuzkoa 
 var map = L.map( 'map', {
     center: [43.153031, -2.106940],
-    minZoom: 10,
+    minZoom: 8,
     zoom: 10
 });
 
 var b5m = L.tileLayer('http://b5m.gipuzkoa.net/api/1.0/eu/osgeo/tms/tileset/1.0.0/{id}/{z}/{x}/{y}.png', {
                 minZoom: 9,
-                maxZoom: 20,
+                maxZoom: 21,
                 attribution: 'Map data &copy; <a href="http://b5m.gipuzkoa.eus" target="_blank">b5m</a>',
                 id: 'map',
                 tms: true
@@ -71,7 +85,7 @@ var ortofoto = L.tileLayer.wms("http://b5m.gipuzkoa.eus/ogc/wms/gipuzkoa_wms", {
 });
 var openStreetMap = L.tileLayer( 'http://a.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     minZoom: 9,
-    maxZoom: 20,
+    maxZoom: 21,
     attribution: 'OpenStreetMap'
 });
 
@@ -86,34 +100,19 @@ var baseLayers = {
 //~ cargaGeoJson('data/combinado.geojson', combinado);
 //~ combinado.addTo(map);
 
-// Convert data from GML to an object in GeoJSON format.
-// Options:
-// - xy: true (default) if coordinates are (lon,lat), false otherwise.
-function gml2geojson(gml, options) {
-    var opts = $.extend({}, {
-        xy: true
-    }, options);
-
-    var features = new OpenLayers.Format.GML.v3({
-        xy: opts.xy
-    }).read(gml);
-    var geojsonstr = new OpenLayers.Format.GeoJSON().write(features);
-    var geojson = JSON.parse(geojsonstr);
-    return geojson
-}
-
 // Carga el GML del servicio WFS del b5m
 // lo convierte a GeoJson y lo carga en la capa que pasamos por parámetro
 // Si zoom es true centramos el zoom en la capa
 function load_wfs(control, filtro, zoom) {
     $.ajax({
-        url: "http://b5m.gipuzkoa.eus/ogc/wfs/desjabetzeak_wfs",
+        url: "https://b5m.gipuzkoa.eus/ogc/wfs/desjabetzeak_wfs",
         data: {
             service: "WFS",
             request: "GetFeature",
             version: "1.1.0",
             typename: "desjabetzeak",
-            srsName: "EPSG:4326", 
+            srsName: "EPSG:4326",
+            outputformat: "geojson",
             //Para el proyecto 298
             //filter: "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>298</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>"
             //Para el proyecto 298 con ID_PARCELA = 11328
@@ -121,9 +120,7 @@ function load_wfs(control, filtro, zoom) {
             filter: filtro
         },
         success: function(data) {
-            var geojson = gml2geojson(data, {
-                xy: false
-            });
+            var geojson = data;
 
             if (geojson["features"].length > 0) {
               //En areas guardamos el codigo de proyecto y 
@@ -148,6 +145,7 @@ function load_wfs(control, filtro, zoom) {
                 valor[0] += parseFloat(obj.AREA);
                 valor[parseInt(obj.COD_AFEC)] += parseFloat(obj.AREA);
                 areasObj.areas[obj.ID_PARCELA] = valor;
+                
               }
 
               //Añadimos las propiedades a la capa para que aparezcan en el popup
@@ -188,7 +186,7 @@ function load_wfs(control, filtro, zoom) {
     });
 }
 
-var overlays;
+var overlays = {};
 var filtro;
 //Cargamos en una capa el proyecto entero
 var proyecto =  L.geoJson(
@@ -196,29 +194,27 @@ var proyecto =  L.geoJson(
                 );
 var finca;
 
+if (typeof(textosMenu) == "undefined") {
+	var textosMenu = [ 'Proyecto', 'Parcela'];
+}
+
 if (typeof(codigofinca) == "undefined" ) {
-	filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
+	filtro = "<ogc:Filter+xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
 	load_wfs(proyecto, filtro, true);
 	proyecto.addTo(map);
-	overlays = {
-	//      "geoJSON local" : combinado,
-	  "Proiektua" : proyecto
-	};
+	overlays[textosMenu[0]]= proyecto;
 } else {
 	finca = L.geoJson(
 		  null, {onEachFeature: popup, style: style}
 	);
-	filtro="<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto +"</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>" + codigofinca +"</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
+	filtro="<ogc:Filter+xmlns:ogc='http://www.opengis.net/ogc'><ogc:And><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto +"</ogc:Literal></ogc:PropertyIsEqualTo><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PARCELA</ogc:PropertyName><ogc:Literal>" + codigofinca +"</ogc:Literal></ogc:PropertyIsEqualTo></ogc:And></ogc:Filter>"
 	load_wfs(finca, filtro, true);
 	finca.addTo(map);
 
-	filtro = "<ogc:Filter xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
+	filtro = "<ogc:Filter+xmlns:ogc='http://www.opengis.net/ogc'><ogc:PropertyIsEqualTo><ogc:PropertyName>ID_PROYECT</ogc:PropertyName><ogc:Literal>" + codigoproyecto + "</ogc:Literal></ogc:PropertyIsEqualTo></ogc:Filter>";
 	load_wfs(proyecto, filtro, false);
-	overlays = {
-	//    "geoJSON local" : combinado,
-	  "Proiektua" : proyecto,
-	  "Lurzatia" : finca
-  };
+	overlays[textosMenu[0]]= proyecto;
+	overlays[textosMenu[1]]= finca;
 }
 
 L.control.layers(baseLayers,overlays).addTo(map);
@@ -234,15 +230,14 @@ L.control.scale({
 var legenda = L.control({position: 'bottomright'});
 legenda.onAdd = function (map) {
 	var div = L.DomUtil.create('div', 'info leyenda');
-	var textos= textosLeyenda;
 	
-	if (typeof(textos) == "undefined") {
-		var textos = [ 'EXpropiado', 'Serv. a\u00E9rea', 'Serv. subterranea', 'Ocupaci\u00F3n temporal'];
+	if (typeof(textosLeyenda) == "undefined") {
+		var textosLeyenda = [ 'Expropiado', 'Serv. a\u00E9rea', 'Serv. subterranea', 'Ocupaci\u00F3n temporal'];
 	}
 	for (var i = 0; i < textosLeyenda.length; i++) {
 		div.innerHTML +=
 		  '<i style="background:' + getColor(i+1) + '"></i> ' +
-		  textos[i] + '<p>';
+		  textosLeyenda[i] + '<p>';
 	}
 	return div;
 };

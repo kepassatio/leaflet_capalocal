@@ -5,7 +5,6 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<title>Leaflet con WFS</title>
 		<script type="text/javascript" src="js/jquery.min.js"></script>
-		<script type="text/javascript" src="js/OpenLayers.js"></script>
 		<script type="text/javascript" src="js/leaflet.js"></script>
 		<link rel="stylesheet" type="text/css" href="css/leaflet.css" charset="utf-8">
 		<link rel="stylesheet" type="text/css" href="css/style.css" charset="utf-8">
@@ -15,12 +14,24 @@
 		<script>
 			 //var codigoproyecto = 298;
 			 //var codigofinca = 11328;
-			 var codigoproyecto = 13;
-			 var codigofinca = 4;
+			 var codigoproyecto = 3;
+			 var codigofinca = 17;
+			 var textosMenu = [	"PROYECTO",
+								"PARCELA"  ];
 			 var textosLeyenda = [ 	"Expropiado", 
 									"Servid. a\u00E9rea", 
 									"Servid. subterranea", 
 									"Ocupaci\u00F3n temporal" ];
+			 var textosInfo = [	"ID_PROYECT",
+								"ID_PARCELA",
+								"COD_AFEC",
+								"AR.  ",
+								"AR. total",
+								"AR. expropiada",
+								"AR. servidumbre aerea",
+								"AR. servidumbre subterranea",
+								"AR. temporal"  ];
+										
 		</script>
 		<script type="text/javascript" src="js/infoGrafica.js"></script>
 <!--
